@@ -5,11 +5,11 @@ import numpy as np
 
 #-----------------------------------------------------------------------------
 # This class loads html files from the "template" directory and formats them using Python.
-# If you are unsure how this is working, just 
+# If you are unsure how this is working, just
 class FrameEngine:
-    def __init__(this, 
-        template_path="templates/", 
-        template_extension=".html", 
+    def __init__(this,
+        template_path="templates/",
+        template_extension=".html",
         **kwargs):
         this.template_path = template_path
         this.template_extension = template_extension
@@ -66,7 +66,7 @@ def check_login(username, password):
     if username != "admin": # Wrong Username
         err_str = "Incorrect Username"
         return err_str, login
-    
+
     if password != "password":
         err_str = "Incorrect Password"
         return err_str, login
@@ -74,7 +74,7 @@ def check_login(username, password):
     login_string = "Logged in!"
     login = True
     return login_string, login
-    
+
 #-----------------------------------------------------------------------------
 # Redirect to login
 @route('/')
@@ -87,20 +87,30 @@ def index():
 def login():
     return fEngine.load_and_render("login")
 
+# Display the register page
+@get('/register')
+def register():
+    return fEngine.load_and_render("register")
+
+# Register a new account
+@post('/register')
+def do_register():
+    return FrameEngine.load_and_render("register")
+
 # Attempt the login
 @post('/login')
 def do_login():
     username = request.forms.get('username')
     password = request.forms.get('password')
     err_str, login = check_login(username, password)
-    if login: 
+    if login:
         return fEngine.load_and_render("valid", flag=err_str)
     else:
         return fEngine.load_and_render("invalid", reason=err_str)
 
 @get('/about')
 def about():
-    garble = ["leverage agile frameworks to provide a robust synopsis for high level overviews.", 
+    garble = ["leverage agile frameworks to provide a robust synopsis for high level overviews.",
     "iterate approaches to corporate strategy and foster collaborative thinking to further the overall value proposition.",
     "organically grow the holistic world view of disruptive innovation via workplace diversity and empowerment.",
     "bring to the table win-win survival strategies to ensure proactive domination.",
