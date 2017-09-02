@@ -1,14 +1,23 @@
-
 Register a new account
 </p>
 <p>
 <form action = "/register" method = "post">
-    Username:<input name = "username" type = "text" />
-</br>
-    Password:<input name = "password" type = "password" />
-</br>
-    Password Confirmation:<input name = "password_confirmation" type = "password" />
-</br>
+     <label><b>Username</b></label>
+	 <input name = "username" placeholder="Enter Username Name" type = "text" />
+      </br>
+	 <label><b>E-mail Address</b></label>
+     <input name="email" placeholder="Enter E-mail" type="text">
+      </br>
+	 <label ><b>Password</b></label>
+     <input name = "password" placeholder="Enter Password" type = "password">
+      </br>
+    <label ><b>Password Confirmation</b></label>
+	<input name = "password_confirmation" type = "password" />
+     </br>
+	 <label><b>Member Type</b></label>
+	<input type="radio" name="member type" value="public"/> Public
+	<input type="radio" name="member type" value="medical professional"/> Medical Professional
+	</br>
     <input value = "Register" type = "submit" />
 </form>
 </p>
