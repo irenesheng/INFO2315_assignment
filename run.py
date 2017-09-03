@@ -109,11 +109,12 @@ def check_login(username, password):
 
 # Read account information from database <Harry>
 # information -> [0]email_address [1]gender [2]age [3]account_type [4]medicare_number
+# format of data file | encrypt(email_address) + '$' + encrypt(gender) + '$' + ... +encrypt(medicare_number) + '$'
 def get_account_details(username):
     script_dir = os.path.dirname(__file__)
     rel_path = "data/testuser" #TODO replace 'testuser' with hash function
     abs_file_path = os.path.join(script_dir, rel_path)
-    file = open(abs_file_path, mode='rb');
+    file = open(abs_file_path, mode = 'rb')
     plain_text = decrypt(file.read())
     file.close()
     index = 0
@@ -127,6 +128,39 @@ def get_account_details(username):
         new = plain_text.find('$', last)
     return information
 
+# Write account information from database <Harry>
+# information -> [0]email_address [1]gender [2]age [3]account_type [4]medicare_number
+def write_account_details(username, information):
+    script_dir = os.path.dirname(__file__)
+    rel_path = "data/testuser" #TODO replace 'testuser' with hash function
+    abs_file_path = os.path.join(script_dir, rel_path)
+    file = open(abs_file_path, mode = 'wb')
+    file.write(encrypt(information[0] + '$' + information[1] + '$' + information[2] + '$' + information[3] + '$' + information[4] + '$'))
+    file.close()
+
+#-----------------------------------------------------------------------------
+
+# Check edit information <Harry>
+def check_edit(username, email_address, gender, age):
+    valid = False
+    if not ('@' in email_address):
+        err_str = "Invalid email address!"
+        return err_str, valid
+    if not (age.isdigit()):
+        err_str = "Invalid age!"
+        return err_str, valid
+    if (int(age) > 150):
+        err_str = "hmmm, maybe you are too old to be our user."
+        return err_str, valid
+    valid = True
+    information = get_account_details(username)
+    information[0] = email_address
+    information[1] = gender
+    information[2] = age
+    write_account_details(username, information)
+    err_str = ''
+    return err_str, valid
+
 #-----------------------------------------------------------------------------
 # Redirect to login
 @route('/')
@@ -138,6 +172,17 @@ def index():
 @get('/login')
 def login():
     return fEngine.load_and_render("login")
+
+# Attempt the login
+@post('/login')
+def do_login():
+    username = request.forms.get('username')
+    password = request.forms.get('password')
+    err_str, login = check_login(username, password)
+    if login:
+        return fEngine.load_and_render("valid", flag=err_str)
+    else:
+        return fEngine.load_and_render("invalid", reason=err_str)
 
 # Display the register page
 @get('/register')
@@ -152,20 +197,27 @@ def do_register():
 # Display the account profile <Harry>
 @get('/account')
 def account():
-    information = get_account_details("testuser") #TODO replace example with username variable
+    information = get_account_details("testuser") #TODO replace this with variable
     return fEngine.load_and_render("account", username = 'username', email_address = information[0], gender = information[1], age = information[2], account_type = information[3], medicare_number = information[4])
-    #TODO replace 'username' above with username variable
+    #TODO replace this with variable
 
-# Attempt the login
-@post('/login')
-def do_login():
-    username = request.forms.get('username')
-    password = request.forms.get('password')
-    err_str, login = check_login(username, password)
-    if login:
-        return fEngine.load_and_render("valid", flag=err_str)
+# Display edit page for account information <Harry>
+@get('/edit')
+def edit():
+    information = get_account_details("testuser") #TODO replace this with variable
+    return fEngine.load_and_render("edit", username = 'username', email_address = information[0], gender = information[1], age = information[2], account_type = information[3], medicare_number = information[4])
+
+# Attempt to edit account informaiton <Harry>
+@post('/edit')
+def do_edit():
+    email_address = request.forms.get('email_address')
+    gender = request.forms.get('gender')
+    age = request.forms.get('age')
+    err_str, valid = check_edit('username', email_address, gender, age) #TODO replace with variable
+    if valid:
+        return fEngine.load_and_render('edit_success')
     else:
-        return fEngine.load_and_render("invalid", reason=err_str)
+        return fEngine.load_and_render('edit_failed', reason = err_str)
 
 @get('/about')
 def about():
