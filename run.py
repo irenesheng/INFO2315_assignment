@@ -1,11 +1,11 @@
 from bottle import route, get, run, post, request, redirect, static_file
 from Crypto.Hash import MD5
+from Crypto.Cipher import AES
 import re
 import numpy as np
 
 #-----------------------------------------------------------------------------
 # This class loads html files from the "template" directory and formats them using Python.
-# If you are unsure how this is working, just
 class FrameEngine:
     def __init__(this,
         template_path="templates/",
@@ -57,6 +57,30 @@ def serve_css(css):
 @route('/js/<js>')
 def serve_js(js):
     return static_file(js, root='js/')
+#-----------------------------------------------------------------------------
+
+# Hash function (with salt) <Harry>
+def hash(string):
+    salt = "!#sa!#lt!#"
+    salted_string = string + salt
+    hashed_string = MD5.new(salted_string.encode()).hexdigest()
+    return hashed_string
+
+# Two-way encryption function using AES <Harry>
+def encrypt(string):
+    key = "Sixteen byte key"
+    mode = AES.MODE_CBC
+    encryptor = AES.new(key, mode)
+    cipher_text = encryptor.encrypt(string)
+    return cipher_text
+
+# Decryption function using AES <Harry>
+def decrypt(string):
+    key = "Sixteen byte key"
+    mode = AES.MODE_CBC
+    decryptor = AES.new(key, mode)
+    plain_text = decryptor.decrypt(string)
+    return plain_text
 
 #-----------------------------------------------------------------------------
 
@@ -74,6 +98,17 @@ def check_login(username, password):
     login_string = "Logged in!"
     login = True
     return login_string, login
+
+#-----------------------------------------------------------------------------
+
+# Read account information from database <Harry>
+def get_account_details(username):
+    account_path = hash(username)
+    file = open("/data/" + account_path, mode='r');
+    information = file.readlines()
+    for i in information:
+        information[i] = decrypt(information[i])
+    return information
 
 #-----------------------------------------------------------------------------
 # Redirect to login
@@ -96,6 +131,12 @@ def register():
 @post('/register')
 def do_register():
     return FrameEngine.load_and_render("register")
+
+# Display the account profile <Harry>
+@get('/account')
+def account():
+    information = get_account_details("testuser") #TODO replace example with username variable
+    return fEngine.load_and_render("account")
 
 # Attempt the login
 @post('/login')
