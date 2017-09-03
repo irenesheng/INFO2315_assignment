@@ -140,6 +140,13 @@ def write_account_details(username, information):
 
 #-----------------------------------------------------------------------------
 
+# Read log file from database <Harry>
+def get_log():
+    log = ''
+    return log
+
+#-----------------------------------------------------------------------------
+
 # Check edit information <Harry>
 def check_edit(username, email_address, gender, age):
     valid = False
@@ -219,15 +226,18 @@ def do_edit():
     else:
         return fEngine.load_and_render('edit_failed', reason = err_str)
 
+# Display log of all behaviors (administrator available only) <Harry>
+@get('/log')
+def log():
+    username = 'admin' #TODO use for testing, remember to delete later
+    if username == 'admin':
+        return fEngine.load_and_render('log', log = get_log())
+    else:
+        return fEngine.load_and_render('access_denied')
+
 @get('/about')
 def about():
-    garble = ["leverage agile frameworks to provide a robust synopsis for high level overviews.",
-    "iterate approaches to corporate strategy and foster collaborative thinking to further the overall value proposition.",
-    "organically grow the holistic world view of disruptive innovation via workplace diversity and empowerment.",
-    "bring to the table win-win survival strategies to ensure proactive domination.",
-    "ensure the end of the day advancement, a new normal that has evolved from generation X and is on the runway heading towards a streamlined cloud solution.",
-    "provide user generated content in real-time will have multiple touchpoints for offshoring."]
-    return fEngine.load_and_render("about", garble=np.random.choice(garble))
+    return fEngine.load_and_render("about")
 
 #-----------------------------------------------------------------------------
 
