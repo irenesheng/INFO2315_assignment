@@ -1,8 +1,10 @@
 from bottle import route, get, run, post, request, redirect, static_file
 from Crypto.Hash import MD5
 from Crypto.Cipher import AES
+from Crypto import Random
 import re
 import numpy as np
+import os
 
 #-----------------------------------------------------------------------------
 # This class loads html files from the "template" directory and formats them using Python.
@@ -68,19 +70,23 @@ def hash(string):
 
 # Two-way encryption function using AES <Harry>
 def encrypt(string):
-    key = "Sixteen byte key"
+    while len(string) % 16 != 0:
+        string = string + ' '
+    key = b'asdfghjkl1234567'
     mode = AES.MODE_CBC
-    encryptor = AES.new(key, mode)
+    IV = b'asdfghjkl1234567'
+    encryptor = AES.new(key, mode, IV)
     cipher_text = encryptor.encrypt(string)
     return cipher_text
 
 # Decryption function using AES <Harry>
 def decrypt(string):
-    key = "Sixteen byte key"
+    key = b'asdfghjkl1234567'
     mode = AES.MODE_CBC
-    decryptor = AES.new(key, mode)
+    IV = b'asdfghjkl1234567'
+    decryptor = AES.new(key, mode, IV)
     plain_text = decryptor.decrypt(string)
-    return plain_text
+    return plain_text.strip().decode('utf-8')
 
 #-----------------------------------------------------------------------------
 
@@ -102,12 +108,23 @@ def check_login(username, password):
 #-----------------------------------------------------------------------------
 
 # Read account information from database <Harry>
+# information -> [0]email_address [1]gender [2]age [3]account_type [4]medicare_number
 def get_account_details(username):
-    account_path = hash(username)
-    file = open("/data/" + account_path, mode='r');
-    information = file.readlines()
-    for i in information:
-        information[i] = decrypt(information[i])
+    script_dir = os.path.dirname(__file__)
+    rel_path = "data/testuser" #TODO replace 'testuser' with hash function
+    abs_file_path = os.path.join(script_dir, rel_path)
+    file = open(abs_file_path, mode='rb');
+    plain_text = decrypt(file.read())
+    file.close()
+    index = 0
+    last = 0
+    new = plain_text.find('$', last)
+    information = ['','','','','']
+    while (new != -1) and (index <= 4):
+        information[index] = plain_text[last:new]
+        last = new + 1
+        index = index + 1
+        new = plain_text.find('$', last)
     return information
 
 #-----------------------------------------------------------------------------
@@ -136,7 +153,8 @@ def do_register():
 @get('/account')
 def account():
     information = get_account_details("testuser") #TODO replace example with username variable
-    return fEngine.load_and_render("account")
+    return fEngine.load_and_render("account", username = 'username', email_address = information[0], gender = information[1], age = information[2], account_type = information[3], medicare_number = information[4])
+    #TODO replace 'username' above with username variable
 
 # Attempt the login
 @post('/login')
