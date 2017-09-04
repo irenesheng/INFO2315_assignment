@@ -15,7 +15,7 @@ terminal`git`指令说明：[https://services.github.com/on-demand/downloads/git
 ## 留言板
 
 Harry: 所有功能还是写在run.py里吧。最好可以在函数前写上作者和说明文件。
-
+Harry: 最后一点要求会在所有主要功能完成后加上去，第二个要求会在login完成后加上去。
 
 ## README.md(markdown语言)语法
 > [简易说明](http://www.jianshu.com/p/q81RER)  

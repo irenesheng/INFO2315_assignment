@@ -2,6 +2,7 @@ from bottle import route, get, run, post, request, redirect, static_file
 from Crypto.Hash import MD5
 from Crypto.Cipher import AES
 from Crypto import Random
+from datetime import datetime
 import re
 import numpy as np
 import os
@@ -114,7 +115,7 @@ def get_account_details(username):
     script_dir = os.path.dirname(__file__)
     rel_path = "data/testuser" #TODO replace 'testuser' with hash function
     abs_file_path = os.path.join(script_dir, rel_path)
-    file = open(abs_file_path, mode = 'rb')
+    file = open(abs_file_path, mode = 'rb+')
     plain_text = decrypt(file.read())
     file.close()
     index = 0
@@ -134,7 +135,7 @@ def write_account_details(username, information):
     script_dir = os.path.dirname(__file__)
     rel_path = "data/testuser" #TODO replace 'testuser' with hash function
     abs_file_path = os.path.join(script_dir, rel_path)
-    file = open(abs_file_path, mode = 'wb')
+    file = open(abs_file_path, mode = 'wb+')
     file.write(encrypt(information[0] + '$' + information[1] + '$' + information[2] + '$' + information[3] + '$' + information[4] + '$'))
     file.close()
 
@@ -142,8 +143,22 @@ def write_account_details(username, information):
 
 # Read log file from database <Harry>
 def get_log():
-    log = ''
+    script_dir = os.path.dirname(__file__)
+    rel_path = "data/logfile"
+    abs_file_path = os.path.join(script_dir, rel_path)
+    file = open(abs_file_path, mode = 'r+')
+    log = file.read()
+    file.close()
     return log
+
+# Append string to log file <Harry>
+def append_log(string):
+    script_dir = os.path.dirname(__file__)
+    rel_path = "data/logfile"
+    abs_file_path = os.path.join(script_dir, rel_path)
+    file = open(abs_file_path, mode = 'a+')
+    file.write(str(datetime.now()) + ' ' + string + '\n')
+    file.close()
 
 #-----------------------------------------------------------------------------
 
