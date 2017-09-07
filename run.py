@@ -1,11 +1,14 @@
 from bottle import route, get, run, post, request, redirect, static_file
 from Crypto.Hash import MD5
+from Crypto.Cipher import AES
+from Crypto import Random
+from datetime import datetime
 import re
 import numpy as np
+import os
 
 #-----------------------------------------------------------------------------
 # This class loads html files from the "template" directory and formats them using Python.
-# If you are unsure how this is working, just
 class FrameEngine:
     def __init__(this,
         template_path="templates/",
@@ -57,6 +60,34 @@ def serve_css(css):
 @route('/js/<js>')
 def serve_js(js):
     return static_file(js, root='js/')
+#-----------------------------------------------------------------------------
+
+# Hash function (with salt) <Harry>
+def hash(string):
+    salt = "!#sa!#lt!#"
+    salted_string = string + salt
+    hashed_string = MD5.new(salted_string.encode()).hexdigest()
+    return hashed_string
+
+# Two-way encryption function using AES <Harry>
+def encrypt(string):
+    while len(string) % 16 != 0:
+        string = string + ' '
+    key = b'asdfghjkl1234567'
+    mode = AES.MODE_CBC
+    IV = b'asdfghjkl1234567'
+    encryptor = AES.new(key, mode, IV)
+    cipher_text = encryptor.encrypt(string)
+    return cipher_text
+
+# Decryption function using AES <Harry>
+def decrypt(string):
+    key = b'asdfghjkl1234567'
+    mode = AES.MODE_CBC
+    IV = b'asdfghjkl1234567'
+    decryptor = AES.new(key, mode, IV)
+    plain_text = decryptor.decrypt(string)
+    return plain_text.strip().decode('utf-8')
 
 #-----------------------------------------------------------------------------
 
@@ -76,6 +107,83 @@ def check_login(username, password):
     return login_string, login
 
 #-----------------------------------------------------------------------------
+
+# Read account information from database <Harry>
+# information -> [0]email_address [1]gender [2]age [3]account_type [4]medicare_number
+# format of data file | encrypt(email_address) + '$' + encrypt(gender) + '$' + ... +encrypt(medicare_number) + '$'
+def get_account_details(username):
+    script_dir = os.path.dirname(__file__)
+    rel_path = "data/testuser" #TODO replace 'testuser' with hash function
+    abs_file_path = os.path.join(script_dir, rel_path)
+    file = open(abs_file_path, mode = 'rb+')
+    plain_text = decrypt(file.read())
+    file.close()
+    index = 0
+    last = 0
+    new = plain_text.find('$', last)
+    information = ['','','','','']
+    while (new != -1) and (index <= 4):
+        information[index] = plain_text[last:new]
+        last = new + 1
+        index = index + 1
+        new = plain_text.find('$', last)
+    return information
+
+# Write account information from database <Harry>
+# information -> [0]email_address [1]gender [2]age [3]account_type [4]medicare_number
+def write_account_details(username, information):
+    script_dir = os.path.dirname(__file__)
+    rel_path = "data/testuser" #TODO replace 'testuser' with hash function
+    abs_file_path = os.path.join(script_dir, rel_path)
+    file = open(abs_file_path, mode = 'wb+')
+    file.write(encrypt(information[0] + '$' + information[1] + '$' + information[2] + '$' + information[3] + '$' + information[4] + '$'))
+    file.close()
+
+#-----------------------------------------------------------------------------
+
+# Read log file from database <Harry>
+def get_log():
+    script_dir = os.path.dirname(__file__)
+    rel_path = "data/logfile"
+    abs_file_path = os.path.join(script_dir, rel_path)
+    file = open(abs_file_path, mode = 'r+')
+    log = file.read()
+    file.close()
+    return log
+
+# Append string to log file <Harry>
+def append_log(string):
+    script_dir = os.path.dirname(__file__)
+    rel_path = "data/logfile"
+    abs_file_path = os.path.join(script_dir, rel_path)
+    file = open(abs_file_path, mode = 'a+')
+    file.write(str(datetime.now()) + ' ' + string + '\n')
+    file.close()
+
+#-----------------------------------------------------------------------------
+
+# Check edit information <Harry>
+def check_edit(username, email_address, gender, age):
+    valid = False
+    if not ('@' in email_address):
+        err_str = "Invalid email address!"
+        return err_str, valid
+    if not (age.isdigit()):
+        err_str = "Invalid age!"
+        return err_str, valid
+    if (int(age) > 150):
+        err_str = "hmmm, maybe you are too old to be our user."
+        return err_str, valid
+    valid = True
+    information = get_account_details(username)
+    information[0] = email_address
+    information[1] = gender
+    information[2] = age
+    write_account_details(username, information)
+    err_str = ''
+    return err_str, valid
+
+#-----------------------------------------------------------------------------
 # Redirect to login
 @route('/')
 @route('/home')
@@ -86,16 +194,6 @@ def index():
 @get('/login')
 def login():
     return fEngine.load_and_render("login")
-
-# Display the register page
-@get('/register')
-def register():
-    return fEngine.load_and_render("register")
-
-# Register a new account
-@post('/register')
-def do_register():
-    return FrameEngine.load_and_render("register")
 
 # Attempt the login
 @post('/login')
@@ -108,15 +206,53 @@ def do_login():
     else:
         return fEngine.load_and_render("invalid", reason=err_str)
 
+# Display the register page
+@get('/register')
+def register():
+    return fEngine.load_and_render("register")
+
+# Register a new account
+@post('/register')
+def do_register():
+    return FrameEngine.load_and_render("register")
+
+# Display the account profile <Harry>
+@get('/account')
+def account():
+    information = get_account_details("testuser") #TODO replace this with variable
+    return fEngine.load_and_render("account", username = 'username', email_address = information[0], gender = information[1], age = information[2], account_type = information[3], medicare_number = information[4])
+    #TODO replace this with variable
+
+# Display edit page for account information <Harry>
+@get('/edit')
+def edit():
+    information = get_account_details("testuser") #TODO replace this with variable
+    return fEngine.load_and_render("edit", username = 'username', email_address = information[0], gender = information[1], age = information[2], account_type = information[3], medicare_number = information[4])
+
+# Attempt to edit account informaiton <Harry>
+@post('/edit')
+def do_edit():
+    email_address = request.forms.get('email_address')
+    gender = request.forms.get('gender')
+    age = request.forms.get('age')
+    err_str, valid = check_edit('username', email_address, gender, age) #TODO replace with variable
+    if valid:
+        return fEngine.load_and_render('edit_success')
+    else:
+        return fEngine.load_and_render('edit_failed', reason = err_str)
+
+# Display log of all behaviors (administrator available only) <Harry>
+@get('/log')
+def log():
+    username = 'admin' #TODO use for testing, remember to delete later
+    if username == 'admin':
+        return fEngine.load_and_render('log', log = get_log())
+    else:
+        return fEngine.load_and_render('access_denied')
+
 @get('/about')
 def about():
-    garble = ["leverage agile frameworks to provide a robust synopsis for high level overviews.",
-    "iterate approaches to corporate strategy and foster collaborative thinking to further the overall value proposition.",
-    "organically grow the holistic world view of disruptive innovation via workplace diversity and empowerment.",
-    "bring to the table win-win survival strategies to ensure proactive domination.",
-    "ensure the end of the day advancement, a new normal that has evolved from generation X and is on the runway heading towards a streamlined cloud solution.",
-    "provide user generated content in real-time will have multiple touchpoints for offshoring."]
-    return fEngine.load_and_render("about", garble=np.random.choice(garble))
+    return fEngine.load_and_render("about")
 
 #-----------------------------------------------------------------------------
 
